@@ -86,7 +86,7 @@ def combineWavy(img):
 # "top-heavy" means that there's more going on in the top of the picture/digit.  
 #   For example: 4 and 9 are top-heavy as there are more transitions in the top of the digit
 # Returns a list with the top-weight and bottom-weight as (top, bottom)
-def top_bottom_balance(img) -> list:
+def top_bottom_balance(img):
     # Get the number of color transitions per row in the image
     transition_array = color_transition_array(img)
     midpoint = len(transition_array)//2 #Get the midpoint of the array
@@ -106,11 +106,46 @@ def top_bottom_balance(img) -> list:
 # with the bigger number representing which part of the image has more going on
 # Returns a single array with the number of color transistions per row, 
 # corresponding to that index in the returned array
-def color_transition_array(img) -> np.ndarray: 
+def color_transition_array(img): 
     img2 = img.copy()
     img2[img2 > 0] = 255 # Any pixel not white becomes black
     return (np.sum(abs(img2[:, 1:] - img2[:, :-1])/255, axis=1))
  
+
+# Alex, Eniola, Yeabkal
+# Divides image into 49, 4x4 cells.
+# Calculates the percentages of the total pixels within the cells that make up the image.
+# Returns a 49 dimensional vector.
+def sectional_density(image):
+    CELL_WIDTH, CELL_HEIGHT = 4, 4
+    pixel_percentages = [0 for i in range((image_size / CELL_WIDTH) * (image_size / CELL_HEIGHT))]
+    total_black_pixels, count = 0, 0
+
+    for corner_y in range(0, (image_size - CELL_HEIGHT + 1), CELL_HEIGHT):
+        for corner_x in range(0, (image_size - CELL_WIDTH + 1), CELL_WIDTH):
+            for i in range(CELL_HEIGHT):
+                for j in range(CELL_WIDTH):
+                    if image[corner_y + i][corner_x + j] > 0: # Pixel is black.
+                        pixel_percentages[count] += 1
+                        total_black_pixels += 1
+            count += 1
+    # Convert to percentages.
+    for i in range(len(pixel_percentages)):
+        pixel_percentages[i] = 100.0*pixel_percentages[i]/total_black_pixels
+
+    return pixel_percentages
+
+# Slantness
+# Convolves with 4 kernels: vertical, horizontal, NE and SE,
+# We are interested in the ratios of their values
+def slantiness(img):
+    kernelNE = np.array([[-1, 0, 1], [0, 2, 0], [1, 0, -1]])/np.sqrt(8)
+    #kernelSE = np.array([[1, 0, -1], [0, 2, 0], [-1, 0, 1]])/np.sqrt(8)
+    #kernelH = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])/np.sqrt(6)
+    #kernelV = np.array([[1, 0, -1], [1, 0, -1], [1, 0, -1]])/np.sqrt(6)
+
+    return sectional_density(convolve(img, kernelNE)) #+\
+        #sectional_density(convolve(img, kernelSE))
 
 """
     Admin Functions
@@ -156,6 +191,22 @@ def find_com(feature_map):
     return com_map
 
 
+# im is the target image
+# k is the kernel
+# returns the convolution image, without reversing k
+def convolve(im, k):
+    kh, kw = k.shape
+    imh, imw = im.shape
+    im_w_border = np.zeros((kh + imh - 1, kw + imw -1))
+    im_w_border[(kh-1)/2:(kh-1)/2+imh, (kw-1)/2:(kw-1)/2+imw] += im
+    new_img = np.array([[np.sum(k*im_w_border[i:i+kh, j:j+kw]) \
+                for j in range(imw)] for i in range(imh)], dtype='float')
+    new_img[new_img>255] = 255
+    new_img[new_img<0] = 0
+    
+    return new_img
+    
+
 """
     TESTS
 """
@@ -188,8 +239,8 @@ def testAMD(feature_map, com_map):
 # feature_map maps digits to list of list of features
 # com_map maps digits to a com of that digit's features
 def testSPM(feature_map, com_map):
-    num_correct = 0
-    num_total = 0
+    num_correct = 0.0
+    num_total = 0.0
     for correct_digit, list_of_features in feature_map.items():
         for some_features in list_of_features:
             smallest_distance = float("inf")
@@ -223,32 +274,39 @@ def testR(feature_map, com_map):
     return predictions
 
 # List of implemented feature functions
-features = [waviness]
+all_features = [waviness, hv_weights, top_bottom_balance, combineWavy,\
+                vertical_lines, sectional_density, slantiness]
 
-# train
-data = read_images("mnist_medium.csv")
-digit_map = make_digit_map(data)
-feature_map = build_feature_map(digit_map, features)
-com = find_com(feature_map)
+for f in all_features:
+    print "\n\n", f
 
-# Test on training data
-print("AMD Test", testAMD(feature_map, com))
-print("SPM Test", testSPM(feature_map, com))
-print("R Test\n", np.array(testR(feature_map, com)))
+    features = [f]
+    
+    # train
+    data = read_images("mnist_medium.csv")
+    digit_map = make_digit_map(data)
+    feature_map = build_feature_map(digit_map, features)
+    com = find_com(feature_map)
 
-# Test on test data
-data = read_images("mnist_medium_test.csv")
-digit_map = make_digit_map(data)
-feature_map = build_feature_map(digit_map, features)
-print("AMD Test", testAMD(feature_map, com))
-print("SPM Test", testSPM(feature_map, com))
-print("R Test\n", np.array(testR(feature_map, com)))
+    # Test on training data
+    print("AMD Test", testAMD(feature_map, com))
+    print("SPM Test", testSPM(feature_map, com))
+    print "R Test\n", np.array(testR(feature_map, com))
 
-
+    # Test on test data
+    data = read_images("mnist_medium_test.csv")
+    digit_map = make_digit_map(data)
+    feature_map = build_feature_map(digit_map, features)
+    print("AMD Test", testAMD(feature_map, com))
+    print("SPM Test", testSPM(feature_map, com))
+    print "R Test\n", np.array(testR(feature_map, com))
 
 
 """
-for img in digit_map[4]:
+data = read_images("mnist_medium.csv")
+digit_map = make_digit_map(data)
+
+for img in digit_map[8]:
     imgr = img.reshape((image_size*1, image_size/1))
     plt.imshow(imgr, cmap=plt.cm.binary)
     plt.show()
