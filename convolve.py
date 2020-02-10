@@ -5,6 +5,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 image_size = 28 # width and length
 
@@ -31,30 +32,51 @@ def make_digit_map(data):
 def convolve(im, k):
     kh, kw = k.shape
     imh, imw = im.shape
+    print im.shape
+    print k.shape
     im_w_border = np.zeros((kh + imh - 1, kw + imw -1))
-    im_w_border[kh-1:kh-1+imh, kw-1:kw-1+imw] += im
-    new_img = np.array([[np.sum(k*im_w_border[j+kw-1:j+2*kw-1, i+kh-1:i+2*kh-1]) \
-                for i in range(imw)] for j in range(imh)], dtype='int')
+    im_w_border[(kh-1)/2:(kh-1)/2+imh, (kw-1)/2:(kw-1)/2+imw] += im
+    new_img = np.array([[np.sum(k*im_w_border[i:i+kh, j:j+kw]) \
+                for j in range(imw)] for i in range(imh)], dtype='int')
+    print(new_img)
     new_img[new_img>255] = 255
     new_img[new_img<0] = 0
     
-    return new_img[kh-1:kh-1+imh, kw-1:kw-1+imw]
+    return new_img
     
 
 
+
+
+# im is the target image
+# k is the kernel
+# returns the convolution image, without reversing k
+def convolveMax(im, k):
+    return 0
     
-kernel = np.array([[-1, 1],[-1, 1]])
+kernel = np.array([[-1, 1],[-1, 1]]) # left-edge detector
+kernel = np.array([[-1, -1],[3, -1]])/3.0 # upper-right corner detector
+#kernel = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])/9.0
+kernel1 = np.array([[-1, 0, 1], [0, 2, 0], [1, 0, -1]])/6.0
+kernel2 = np.array([[1, 0, -1], [0, 2, 0], [-1, 0, 1]])/6.0
+kernel3 = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])/math.sqrt(6)
 
-
-
-data = read_images("mnist_small.csv")
+data = read_images("mnist_medium.csv")
 digit_map = make_digit_map(data)
 
-imgr = digit_map[4][0].reshape((image_size*1, image_size/1))
+imgr = digit_map[0][7].reshape((image_size*1, image_size/1))
 plt.imshow(imgr, cmap=plt.cm.binary)
 plt.show()
 
-imgrc = convolve(imgr, kernel)
+imgrc = convolve(imgr, kernel1)
+plt.imshow(imgrc, cmap=plt.cm.binary)
+plt.show()
+
+imgrc = convolve(imgr, kernel2)
+plt.imshow(imgrc, cmap=plt.cm.binary)
+plt.show()
+
+imgrc = convolve(imgr, kernel3)
 plt.imshow(imgrc, cmap=plt.cm.binary)
 plt.show()
 
