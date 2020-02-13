@@ -43,7 +43,7 @@ def hv_weights(image):
 # taking an image which is not necessarily blocked in black beforehand
 vertical_line_len = 10
 def vertical_lines(image):
-    lines = [0] # Have a 0 to the left of the first char in the list                                                                  
+    lines = [0] # Have a 0 to the left of the first char in the list
     for x in range(image_size - 1):
         counter = 0
         max = 0
@@ -54,12 +54,12 @@ def vertical_lines(image):
             else:
                 if pixel == 1:
                     counter += pixel
-                else: #if there's a gap                                                                                                               
+                else: #if there's a gap
                     max = np.maximum(max, counter)
                     counter = 0
         max = np.maximum(max, counter)
         lines.append(1 if max >= vertical_line_len else 0)
-    #print(lines)                                                                                                                                     
+    #print(lines)
     line_count = 0
     for i in range(1, image_size):
         if lines[i] == 0 and lines[i-1] == 1:
@@ -69,8 +69,8 @@ def vertical_lines(image):
 
 # Minh/Matt/David
 # Build the vertical waviness of the image, and sum it with the horizontal waviness.
-# gets horizontal waviness, rotates matrix 90 degrees and runs formula for horizontal 
-# waviness again for vertical waviness, add both waviness features together 
+# gets horizontal waviness, rotates matrix 90 degrees and runs formula for horizontal
+# waviness again for vertical waviness, add both waviness features together
 def combineWavy(img):
     x = np.sum(abs(img[1:]-img[:-1])/255,axis=1)[::2]
     img = np.rot90(img)
@@ -78,12 +78,11 @@ def combineWavy(img):
     z = np.add(x,y)
     return z.tolist()
 
-
 # Michael, Michael, and Will
-# Feature: top-heavy vs bottom-heavy 
-# "bottom-heavy" means that there's more going on in the bottom of the picture/digit.  
+# Feature: top-heavy vs bottom-heavy
+# "bottom-heavy" means that there's more going on in the bottom of the picture/digit.
 #   For example: 6 is bottom-heavy because there are more transitions in the bottom of the digit.
-# "top-heavy" means that there's more going on in the top of the picture/digit.  
+# "top-heavy" means that there's more going on in the top of the picture/digit.
 #   For example: 4 and 9 are top-heavy as there are more transitions in the top of the digit
 # Returns a list with the top-weight and bottom-weight as (top, bottom)
 def top_bottom_balance(img):
@@ -102,15 +101,15 @@ def top_bottom_balance(img):
 # Split the image in half and compare the weights
 # (# of color transitions, can be easily modified to do sum of non-white
 # pixel values) of the two halves.
-# The function returns a tuple in the form (top_half, bottom_half), 
+# The function returns a tuple in the form (top_half, bottom_half),
 # with the bigger number representing which part of the image has more going on
-# Returns a single array with the number of color transistions per row, 
+# Returns a single array with the number of color transistions per row,
 # corresponding to that index in the returned array
-def color_transition_array(img): 
+def color_transition_array(img):
     img2 = img.copy()
     img2[img2 > 0] = 255 # Any pixel not white becomes black
     return (np.sum(abs(img2[:, 1:] - img2[:, :-1])/255, axis=1))
- 
+
 
 # Alex, Eniola, Yeabkal
 # Divides image into 49, 4x4 cells.
@@ -203,9 +202,9 @@ def convolve(im, k):
                 for j in range(imw)] for i in range(imh)], dtype='float')
     new_img[new_img>255] = 255
     new_img[new_img<0] = 0
-    
+
     return new_img
-    
+
 
 """
     TESTS
@@ -227,11 +226,11 @@ def testAMD(feature_map, com_map):
                     mdist = dist
                     ccom = ckey
             if ccom == key:
-                countr +=1  
+                countr +=1
             else:
                 countw +=1
     per = countr/(countr +  countw)
-    return per 
+    return per
 
 
 # Sri / Paul / Michael Bujard
@@ -281,7 +280,7 @@ for f in all_features:
     print "\n\n", f
 
     features = [f]
-    
+
     # train
     data = read_images("mnist_medium.csv")
     digit_map = make_digit_map(data)
@@ -311,4 +310,3 @@ for img in digit_map[8]:
     plt.imshow(imgr, cmap=plt.cm.binary)
     plt.show()
 """
-
